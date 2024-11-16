@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
-
+import platform
+print('ok')
+print(platform.python_version())
 import rospy
 import cv2
+import math
 import torch
 import torch.backends.cudnn as cudnn
 import numpy as np
 from cv_bridge import CvBridge
 from pathlib import Path
 import os
+import time
 import sys
 from rostopic import get_topic_type
-
+from std_msgs.msg import Float32MultiArray
 from sensor_msgs.msg import Image, CompressedImage
 from detection_msgs.msg import BoundingBox, BoundingBoxes
-
-
+from std_msgs.msg import Header, Float32MultiArray
+from geometry_msgs.msg import Point
+import std_msgs
 # add yolov5 submodule to path
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0] / "yolov5"
@@ -72,7 +77,7 @@ class Yolov5Detector:
             self.model.model.half() if self.half else self.model.model.float()
         bs = 1  # batch_size
         cudnn.benchmark = True  # set True to speed up constant image size inference
-        self.model.warmup()  # warmup        
+        self.model.warmup(imgsz=(1,3,480,480))  # warmup   
         
         # Initialize subscriber to Image/CompressedImage topic
         input_image_type, input_image_topic, _ = get_topic_type(rospy.get_param("~input_image_topic"), blocking = True)
@@ -89,21 +94,29 @@ class Yolov5Detector:
 
         # Initialize prediction publisher
         self.pred_pub = rospy.Publisher(
-            rospy.get_param("~output_topic"), BoundingBoxes, queue_size=10
+            rospy.get_param("~output_topic"), BoundingBoxes, queue_size=1
         )
         # Initialize image publisher
         self.publish_image = rospy.get_param("~publish_image")
         if self.publish_image:
             self.image_pub = rospy.Publisher(
-                rospy.get_param("~output_image_topic"), Image, queue_size=10
+                rospy.get_param("~output_image_topic"), Image, queue_size=1
             )
         
+        # Initialize angle publisher
+        self.angle_pub = rospy.Publisher(
+            'angle_list', Float32MultiArray, queue_size=1
+        )   
+
+        self.center_points_pub = rospy.Publisher('center_points', Float32MultiArray, queue_size=1)
         # Initialize CV_Bridge
         self.bridge = CvBridge()
+     
 
     def callback(self, data):
         """adapted from yolov5/detect.py"""
         # print(data.header)
+        start = time.time()
         if self.compressed_input:
             im = self.bridge.compressed_imgmsg_to_cv2(data, desired_encoding="bgr8")
         else:
@@ -118,6 +131,9 @@ class Yolov5Detector:
         im = torch.from_numpy(im).to(self.device) 
         im = im.half() if self.half else im.float()
         im /= 255
+
+        length = im0.shape[1]
+
         if len(im.shape) == 3:
             im = im[None]
 
@@ -134,7 +150,14 @@ class Yolov5Detector:
         bounding_boxes = BoundingBoxes()
         bounding_boxes.header = data.header
         bounding_boxes.image_header = data.header
-        
+        angle_array = []
+
+        center_points = Float32MultiArray()
+        center_points.layout.dim.append(std_msgs.msg.MultiArrayDimension())
+        center_points.layout.dim[0].label = "center_points"
+        center_points.layout.dim[0].size = 0
+        center_points.layout.dim[0].stride = 0
+
         annotator = Annotator(im0, line_width=self.line_thickness, example=str(self.names))
         if len(det):
             # Rescale boxes from img_size to im0 size
@@ -144,30 +167,62 @@ class Yolov5Detector:
             for *xyxy, conf, cls in reversed(det):
                 bounding_box = BoundingBox()
                 c = int(cls)
+                if c==0:
                 # Fill in bounding box message
-                bounding_box.Class = self.names[c]
-                bounding_box.probability = conf 
-                bounding_box.xmin = int(xyxy[0])
-                bounding_box.ymin = int(xyxy[1])
-                bounding_box.xmax = int(xyxy[2])
-                bounding_box.ymax = int(xyxy[3])
+                    bounding_box.Class = self.names[c]
+                    bounding_box.probability = conf 
+                    bounding_box.xmin = int(xyxy[0])
+                    bounding_box.ymin = int(xyxy[1])
+                    bounding_box.xmax = int(xyxy[2])
+                    bounding_box.ymax = int(xyxy[3])
+                    
+                    r1 = (bounding_box.xmax-318)/952*2
+                    r2 = (bounding_box.xmin-318)/952*2
 
-                bounding_boxes.bounding_boxes.append(bounding_box)
+                    angle1 = math.degrees(math.atan(r1))
+                    angle2 = math.degrees(math.atan(r2))
 
-                # Annotate the image
-                if self.publish_image or self.view_image:  # Add bbox to image
-                      # integer class
-                    label = f"{self.names[c]} {conf:.2f}"
-                    annotator.box_label(xyxy, label, color=colors(c, True))       
+                    # Calculate center point
+                    center_x = (bounding_box.xmin + bounding_box.xmax) // 2
+                    center_y =  bounding_box.ymax
 
-                
+                    # Add center point to the list
+                    center_points.data.extend([bounding_box.xmin,bounding_box.ymin,bounding_box.xmax,bounding_box.ymax])
+                    # p1 = bounding_box.xmax-length/2+0.00001
+                    # p2 = bounding_box.xmin-length/2+0.00001
+                    # h  = im.shape[-2]*2-bounding_box.ymax
+                    # angle1 = math.degrees(math.atan(h/p1))
+                    # angle2 = math.degrees(math.atan(h/p2))
+                    # if angle1<0:
+                    #     angle1 += 180
+                    # if angle2<0:
+                    #     angle2 += 180
+
+                    angle_data = [angle1,angle2]
+                    angle_array.append(angle_data)
+                    bounding_boxes.bounding_boxes.append(bounding_box)
+
+                    # Annotate the image
+                    if self.publish_image or self.view_image:  # Add bbox to image
+                        # integer class
+                        label = f"{self.names[c]} {conf:.2f}"
+                        annotator.box_label(xyxy, label, color=colors(c, True))       
+            angle_array = np.array(angle_array,dtype='float32')
+            angle_message = Float32MultiArray(data=angle_array.flatten())
+            # print(angle_message)
                 ### POPULATE THE DETECTION MESSAGE HERE
+            center_points.layout.dim[0].size = len(center_points.data) // 2
+            center_points.layout.dim[0].stride = len(center_points.data)
 
             # Stream results
             im0 = annotator.result()
 
         # Publish prediction
-        self.pred_pub.publish(bounding_boxes)
+            # print(bounding_boxes)
+            self.pred_pub.publish(bounding_boxes)
+            # print('Publishing')
+            self.angle_pub.publish(angle_message)
+            self.center_points_pub.publish(center_points)
 
         # Publish & visualize images
         if self.view_image:
@@ -175,6 +230,10 @@ class Yolov5Detector:
             cv2.waitKey(1)  # 1 millisecond
         if self.publish_image:
             self.image_pub.publish(self.bridge.cv2_to_imgmsg(im0, "bgr8"))
+
+        end = time.time()
+        used_time = (end-start)*1000
+        # print("The time for processing is {} ms".format(used_time))
         
 
     def preprocess(self, img):
@@ -193,7 +252,7 @@ class Yolov5Detector:
 if __name__ == "__main__":
 
     check_requirements(exclude=("tensorboard", "thop"))
-    
+    print('start')
     rospy.init_node("yolov5", anonymous=True)
     detector = Yolov5Detector()
     
