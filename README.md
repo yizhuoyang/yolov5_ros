@@ -17,7 +17,7 @@ pip install -r requirements.txt # install the requirements for yolov5
 * Build the ROS package:
 ```bash
 cd <ros_workspace>
-catkin build yolov5_ros # build the ROS package
+catkin build yolov5_ros -DPYTHON_EXECUTABLE='path_to_your_python_interpreter' # build the ROS package
 ```
 * Make the Python script executable 
 ```bash
