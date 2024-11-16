@@ -10,7 +10,7 @@ This package is built and tested on Ubuntu 20.04 LTS and ROS Noetic with Python 
 ```bash
 cd <ros_workspace>/src
 git clone https://github.com/mats-robotics/detection_msgs.git
-git clone --recurse-submodules https://github.com/mats-robotics/yolov5_ros.git 
+git clone https://github.com/yizhuoyang/yolov5_ros.git
 cd yolov5_ros/src/yolov5
 pip install -r requirements.txt # install the requirements for yolov5
 ```
@@ -32,13 +32,18 @@ Change the parameter for `input_image_topic` in launch/yolov5.launch to any ROS 
 ```bash
 roslaunch yolov5_ros yolov5.launch
 ```
+*Note:
+You can follow the yolo offical website to export the model to .engine file :https://docs.ultralytics.com/modes/export/#export-formats
 
-## Using custom weights and dataset (Working)
-* Put your weights into `yolov5_ros/src/yolov5`
-* Put the yaml file for your dataset classes into `yolov5_ros/src/yolov5/data`
-* Change related ROS parameters in yolov5.launch: `weights`,  `data`
+After acceleartion the yolo network is able to achieve around 15hz speed on orin nx, but is recommanded to train a model with input size around 480*480, which will gaurentee the speed when more programs run at the same time
+
+## Note:
+This repo is based on Ros_Yolov5: https://github.com/mats-robotics/yolov5_ros
+
+The detection.py added the angle prediction of the pedestrians.
 
 ## Reference
+* Ros_Yolov5: https://github.com/mats-robotics/yolov5_ros
 * YOLOv5 official repository: https://github.com/ultralytics/yolov5
 * YOLOv3 ROS PyTorch: https://github.com/eriklindernoren/PyTorch-YOLOv3
 * Darknet ROS: https://github.com/leggedrobotics/darknet_ros
