@@ -1,5 +1,5 @@
 # YOLOv11 ROS
-This is a ROS interface for using YOLOv11 for real time object detection on a ROS image topic. It supports inference on multiple deep learning frameworks used in the [official YOLOv5 repository](https://github.com/ultralytics/yolov5).
+This is a ROS interface for using YOLOv11 for real time object detection on a ROS image topic.
 
 ## Installation
 
