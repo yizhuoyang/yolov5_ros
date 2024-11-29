@@ -1,5 +1,5 @@
-# YOLOv5 ROS
-This is a ROS interface for using YOLOv5 for real time object detection on a ROS image topic. It supports inference on multiple deep learning frameworks used in the [official YOLOv5 repository](https://github.com/ultralytics/yolov5).
+# YOLOv11 ROS
+This is a ROS interface for using YOLOv11 for real time object detection on a ROS image topic. It supports inference on multiple deep learning frameworks used in the [official YOLOv5 repository](https://github.com/ultralytics/yolov5).
 
 ## Installation
 
@@ -30,7 +30,7 @@ Change the parameter for `input_image_topic` in launch/yolov5.launch to any ROS 
 
 * Launch the node:
 ```bash
-roslaunch yolov5_ros yolov5.launch
+roslaunch yolo_detect yolo.launch
 ```
 *Note:
 You can follow the yolo offical website to export the model to .engine file :https://docs.ultralytics.com/modes/export/#export-formats
