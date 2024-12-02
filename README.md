@@ -1,7 +1,8 @@
 # YOLOv5 ROS
 This is a ROS interface for using YOLOv5 for real time object detection on a ROS image topic. It supports inference on multiple deep learning frameworks used in the [official YOLOv5 repository](https://github.com/ultralytics/yolov5).
 
-## Installation
+## Training 
+The training and inference codes is based on Yolov5: https://github.com/ultralytics/yolov5. 
 
 ### Dependencies
 This package is built and tested on Ubuntu 20.04 LTS and ROS Noetic with Python 3.8.
@@ -41,6 +42,8 @@ After acceleartion the yolo network is able to achieve around 15hz speed on orin
 This repo is based on Ros_Yolov5: https://github.com/mats-robotics/yolov5_ros
 
 The detection.py added the angle prediction of the pedestrians.
+
+We have also developed a more advanced detection framework based on YOLOv11, which can also support yolov8,v9,v10, yolo-world etc. You can find it in the yolov11 branch but the readme is not up to date, but you can use it with the same manner.
 
 ## Reference
 * Ros_Yolov5: https://github.com/mats-robotics/yolov5_ros
