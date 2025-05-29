@@ -38,6 +38,11 @@ You can follow the yolo offical website to export the model to .engine file :htt
 
 After acceleartion the yolo network is able to achieve around 15hz speed on orin nx, but is recommanded to train a model with input size around 480*480, which will gaurentee the speed when more programs run at the same time
 
+Specifically cd <ros_workspace>/src/yolov5_ros/src/yolov5 and run:
+```bash
+python export.py --weights /home/kemove/Downloads/yolov5s.pt --include engine --imgsz 480 --device 0 
+```
+where yolov5s can be downloaded from the official website: https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt. Or can trian own model
 ## Note:
 This repo is based on Ros_Yolov5: https://github.com/mats-robotics/yolov5_ros
 
