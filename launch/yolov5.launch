@@ -1,6 +1,6 @@
 <launch>
     <!-- Detection configuration -->
-    <arg name="weights" default="/home/kemove/delta_project/yolov5/yolov5s-seg.engine" />
+    <arg name="weights" default="/home/kemove/Downloads/yolov5s.engine" />
     <arg name="data" default="$(find yolov5_ros)/src/yolov5/data/coco128.yaml" />
     <arg name="confidence_threshold" default="0.6" />
     <arg name="iou_threshold" default="0.45" />
@@ -9,8 +9,9 @@
     <arg name="agnostic_nms" default="true" />
     <arg name="line_thickness" default="3" />
     <arg name="dnn" default="true" />
-    <arg name="half" default="true" />
-
+    <arg name="half" default="false" />
+    <arg name="cx" default="318" />
+    <arg name="fx" default="476" />
     <!-- replace imgsz -->
     <arg name="inference_size_h" default="480" />
     <arg name="inference_size_w" default="480" />
@@ -19,7 +20,7 @@
     <arg name="view_image" default="false" />
 
     <!-- ROS topics -->
-    <arg name="input_image_topic" default="/zed2i/zed_node/right/image_rect_color" />
+    <arg name="input_image_topic" default="/zed2i/zed_node/left/image_rect_color" />
     <arg name="output_topic" default="/yolov5/detections" />
 
     <!-- Optional topic (publishing annotated image) -->
@@ -38,7 +39,8 @@
         <param name="line_thickness" value="$(arg line_thickness)" />
         <param name="dnn" value="$(arg dnn)" />
         <param name="half" value="$(arg half)" />
-
+        <param name="cx" value="$(arg cx)" />
+        <param name="fx" value="$(arg fx)" />
         <param name="inference_size_h" value="$(arg inference_size_h)" />
         <param name="inference_size_w" value="$(arg inference_size_w)" />
 
@@ -52,4 +54,3 @@
     </node>
 
 </launch>
-

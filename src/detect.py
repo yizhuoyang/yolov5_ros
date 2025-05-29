@@ -50,6 +50,8 @@ class Yolov5Detector:
         self.classes = rospy.get_param("~classes", None)
         self.line_thickness = rospy.get_param("~line_thickness")
         self.view_image = rospy.get_param("~view_image")
+        self.fx = rospy.get_param("~fx")
+        self.cx = rospy.get_param("~cx")
         # Initialize weights 
         weights = rospy.get_param("~weights")
         # Initialize model
@@ -77,7 +79,7 @@ class Yolov5Detector:
             self.model.model.half() if self.half else self.model.model.float()
         bs = 1  # batch_size
         cudnn.benchmark = True  # set True to speed up constant image size inference
-        self.model.warmup(imgsz=(1,3,480,480))  # warmup   
+        self.model.warmup(imgsz=(1,3,self.img_size[0],self.img_size[1]))  # warmup   
         
         # Initialize subscriber to Image/CompressedImage topic
         input_image_type, input_image_topic, _ = get_topic_type(rospy.get_param("~input_image_topic"), blocking = True)
@@ -123,9 +125,6 @@ class Yolov5Detector:
             im = self.bridge.imgmsg_to_cv2(data, desired_encoding="bgr8")
         
         im, im0 = self.preprocess(im)
-        # print(im.shape)
-        # print(img0.shape)
-        # print(img.shape)
 
         # Run inference
         im = torch.from_numpy(im).to(self.device) 
@@ -176,8 +175,8 @@ class Yolov5Detector:
                     bounding_box.xmax = int(xyxy[2])
                     bounding_box.ymax = int(xyxy[3])
                     
-                    r1 = (bounding_box.xmax-318)/952*2
-                    r2 = (bounding_box.xmin-318)/952*2
+                    r1 = (bounding_box.xmax-self.cx)/self.fx
+                    r2 = (bounding_box.xmin-self.cx)/self.fx
 
                     angle1 = math.degrees(math.atan(r1))
                     angle2 = math.degrees(math.atan(r2))
